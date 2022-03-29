@@ -1,3 +1,6 @@
+# you can choose 'old date threshold=5' like this -> eg. python3 musinsa.py 5
+# this code work with aws credential profile[musinsa] in your server(~/.aws/credentials)
+
 from os import access
 import boto3
 import datetime
