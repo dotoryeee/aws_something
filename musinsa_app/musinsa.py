@@ -3,19 +3,35 @@
 
 import boto3
 import datetime
+import os
+import sys
 import csv
 import argparse
 import botocore.exceptions
+from typing import Optional
 
 
-try:
-    session = boto3.Session(profile_name="musinsa")
-    print("Credential file loaded")
-    iam = session.client("iam")
-except botocore.exceptions.ProfileNotFound:
-    print("NO CREDENTIAL FOUND")
-except Exception as e:
-    print(f"FAIL: load credentials {e}")
+def checkCredential():
+    try:
+        os.environ.get("AWS_ACCESS_KEY_ID")
+        os.environ.get("AWS_SECRET_ACCESS_KEY")
+        os.environ.get("AWS_DEFAULT_REGION")
+    except:
+        print("ERROR: NO CREDENTIAL IN ENVIRONMENT VARIABLES")
+        sys.exit(1)
+
+
+def loadCredential(profile_name: Optional[str] = None):
+    checkCredential()
+    try:
+        session = boto3.Session(profile_name=profile_name)
+        iam = session.client("iam")
+        print("Credential file loaded")
+    except botocore.exceptions.ProfileNotFound:
+        print("NO CREDENTIAL FOUND")
+    except Exception as e:
+        print(f"FAIL: load credentials|{e}")
+    return iam
 
 
 def getArgs():
@@ -28,10 +44,10 @@ def getArgs():
         print(f"select accesskeys older than {args.old} day(s)")
         return args.old
     except Exception as e:
-        print(f"FAIL: arg parser {e}")
+        print(f"FAIL: arg parser|{e}")
 
 
-def getUserList():
+def getUserList(iam):
     user_names = []
     try:
         iam_users = iam.list_users()["Users"]
@@ -39,10 +55,10 @@ def getUserList():
             user_names.append(user["UserName"])
         return user_names
     except Exception as e:
-        print(f"FAIL: get user list{e}")
+        print(f"FAIL: get user list|{e}")
 
 
-def getAccessKeys(user_names):
+def getAccessKeys(iam, user_names):
     access_key_list = []
     try:
         for user_name in user_names:
@@ -59,7 +75,7 @@ def getAccessKeys(user_names):
                     pass  # pass if user don't have access key
         return access_key_list
     except Exception as e:
-        print(f"FAIL: get access key info{e}")
+        print(f"FAIL: get access key info|{e}")
 
 
 def appendHowOld(access_key_list, old_target):
@@ -73,7 +89,7 @@ def appendHowOld(access_key_list, old_target):
                 returnData.append(access_key_info)
         return returnData
     except Exception as e:
-        print(f"FAIL: append accesskey old info{e}")
+        print(f"FAIL: append accesskey old info|{e}")
 
 
 def makeCSV(access_key_list):
@@ -93,13 +109,14 @@ def makeCSV(access_key_list):
         f.close()
         return "success"
     except Exception as e:
-        print(f"FAIL: making CSV {e}")
+        print(f"FAIL: making CSV|{e}")
 
 
 if __name__ == "__main__":
     old_target = getArgs()
-    user_names = getUserList()
-    access_key_list = getAccessKeys(user_names)
+    iam = loadCredential()
+    user_names = getUserList(iam)
+    access_key_list = getAccessKeys(iam, user_names)
     access_key_list = appendHowOld(access_key_list, old_target)
     make_file_result = makeCSV(access_key_list)
     print(make_file_result)
