@@ -5,10 +5,17 @@ import boto3
 import datetime
 import csv
 import argparse
+import botocore.exceptions
 
-session = boto3.Session(profile_name="musinsa")
-iam = session.client("iam")
-today = datetime.datetime.now(datetime.timezone.utc)
+
+try:
+    session = boto3.Session(profile_name="musinsa")
+    print("Credential file loaded")
+    iam = session.client("iam")
+except botocore.exceptions.ProfileNotFound:
+    print("NO CREDENTIAL FOUND")
+except Exception as e:
+    print(f"FAIL: load credentials {e}")
 
 
 def getArgs():
@@ -42,7 +49,12 @@ def getAccessKeys(user_names):
             paginator = iam.get_paginator("list_access_keys")
             for response in paginator.paginate(UserName=user_name):
                 try:
-                    access_key_list.append(response["AccessKeyMetadata"][0])
+                    access_key_list.append(
+                        response["AccessKeyMetadata"][0]
+                    )  # User's fisrt access key
+                    access_key_list.append(
+                        response["AccessKeyMetadata"][1]
+                    )  # User's second access key
                 except:
                     pass  # pass if user don't have access key
         return access_key_list
@@ -52,6 +64,7 @@ def getAccessKeys(user_names):
 
 def appendHowOld(access_key_list, old_target):
     returnData = []
+    today = datetime.datetime.now(datetime.timezone.utc)
     try:
         for access_key_info in access_key_list:
             date_diff = today - access_key_info["CreateDate"]
