@@ -1,0 +1,19 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: musinsa-deploy
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: musinsa-app
+  template:
+    metadata:
+      labels:
+        app: musinsa-app
+    spec:
+      containers:
+        - name: musinsa
+          image: dotoryeee/musinsa:0.0
+          ports:
+            - containerPort: 80
