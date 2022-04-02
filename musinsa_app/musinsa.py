@@ -7,7 +7,6 @@ import os
 import sys
 import csv
 import argparse
-import botocore.exceptions
 from typing import Optional
 
 
@@ -23,14 +22,9 @@ def checkCredential():
 
 def loadCredential(profile_name: Optional[str] = None):
     checkCredential()
-    try:
-        session = boto3.Session(profile_name=profile_name)
-        iam = session.client("iam")
-        print("Credential file loaded")
-    except botocore.exceptions.ProfileNotFound:
-        print("NO CREDENTIAL FOUND")
-    except Exception as e:
-        print(f"FAIL: load credentials|{e}")
+    session = boto3.Session(profile_name=profile_name)
+    iam = session.client("iam")
+    print("Credential file loaded")
     return iam
 
 
